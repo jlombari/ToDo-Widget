@@ -55,7 +55,7 @@ class TodoWidget(ctk.CTk):
     def build_ui(self):
         title = ctk.CTkLabel(
             self,
-            text="Tasks",
+            text="TODO WIDGET",
             font=("Segoe UI", 24, "bold")
         )
         title.pack(pady=(15, 10))
@@ -101,7 +101,7 @@ class TodoWidget(ctk.CTk):
         )
         self.todo_label = ctk.CTkLabel(
             self,
-            text="TO DO",
+            text="TODO",
             anchor="w",
             font=("Segoe UI", 15, "bold")
         )
@@ -205,7 +205,7 @@ class TodoWidget(ctk.CTk):
             row,
             text=task["text"],
             command=lambda:
-            self.completed_task(task)
+            self.complete_task(task)
         )
         checkbox.pack(
             side="left",
