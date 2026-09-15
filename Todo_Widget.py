@@ -1,6 +1,8 @@
 '''
 SUMMARY OF SOFTWARE
-- - - - - - - - - - -
+- - - - - - - - - - - - - -
+Version 0.1.3 (Pre-Release)
+ - - - - - - - - - - - - - -
 A TO-DO desktop widget with
 persistent storage and a
 priority system. Similar to
@@ -24,6 +26,9 @@ else:
 
 
 SAVE_FILE = os.path.join(APP_DIR, "tasks.json")
+SETTINGS_FILE = os.path.join(APP_DIR, "userPref.json")
+
+User_ThemePref = "Dark"
 
 PRIORITY_ORDER = {
     "Critical": 0,
@@ -34,9 +39,9 @@ PRIORITY_ORDER = {
 
 def priority_color(priority):
     colors = {
-        "Critical": "#ff2222",
+        "Critical": "#ff0000",
         "High": "#ff6b6b",
-        "Medium": "#ffd65a",
+        "Medium": "#fb7f2f",
         "Low": "#59d98e"
     }
     return colors.get(priority, "white")
@@ -46,19 +51,44 @@ class TodoWidget(ctk.CTk):
         super().__init__()
         self.title("TODOs")
         self.geometry("400x700")
+        self.topbar = ctk.CTkFrame(self, height=40)
+        self.topbar.pack(fill="x")
         self.attributes("-topmost", True)
         self.todo_items = []
         self.completed_items = []
         self.build_ui()
         self.load_tasks()
+        self.load_preferences()
 
+    def toggle_theme(self):
+        current = ctk.get_appearance_mode()
+
+        if current == "Dark":
+            ctk.set_appearance_mode("light")
+            self.theme_btn.configure(text="☀")
+            self.User_ThemePref = ctk.get_appearance_mode()
+            self.update_preference()
+        else:
+            ctk.set_appearance_mode("dark")
+            self.theme_btn.configure(text="🌙")
+            self.User_ThemePref = ctk.get_appearance_mode()
+            self.update_preference()
+
+    
     def build_ui(self):
         title = ctk.CTkLabel(
-            self,
-            text="TODO WIDGET",
+            self.topbar,
+            text="TO-DO WIDGET",
             font=("Segoe UI", 24, "bold")
         )
-        title.pack(pady=(15, 10))
+        title.pack(side="left", padx=10)
+        self.theme_btn = ctk.CTkButton(
+            self.topbar,
+            width=40,
+            text="🌙",
+            command=self.toggle_theme
+        )
+        self.theme_btn.pack(side="right", padx=10)
         input_frame = ctk.CTkFrame(self)
         input_frame.pack(fill="x", padx=10)
         self.task_entry = ctk.CTkEntry(
@@ -101,7 +131,7 @@ class TodoWidget(ctk.CTk):
         )
         self.todo_label = ctk.CTkLabel(
             self,
-            text="TODO",
+            text="Active Tasks",
             anchor="w",
             font=("Segoe UI", 15, "bold")
         )
@@ -116,17 +146,24 @@ class TodoWidget(ctk.CTk):
             expand=True,
             padx=10
         )
-        self.done_label = ctk.CTkLabel(
+        self.done_header = ctk.CTkFrame(
             self,
-            text="COMPLETED",
-            anchor="w",
+            fg_color="transparent"
+        )
+        self.done_header.pack(fill="x", padx=10, pady=(10, 5))
+        self.done_label = ctk.CTkLabel(
+            self.done_header,
+            text="Completed Tasks",
             font=("Segoe UI", 15, "bold")
         )
-        self.done_label.pack(
-            fill="x",
-            padx=15,
-            pady=(15, 5)
+        self.done_label.pack(side="left")
+        self.clear_button = ctk.CTkButton(
+            self.done_header,
+            text="Clear",
+            width=80,
+            command=self.clear_completed_tasks
         )
+        self.clear_button.pack(side="right")
         self.done_frame = ctk.CTkScrollableFrame(
             self,
             height=180
@@ -163,6 +200,39 @@ class TodoWidget(ctk.CTk):
                 indent=4
             )
 
+    def update_preference(self):
+        data = {
+            "appearance_mode": self.User_ThemePref
+        }
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                data,
+                f,
+                indent=4
+            )
+
+    def load_preferences(self):
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            theme = data.get("appearance_mode", "Dark")
+            ctk.set_appearance_mode(theme)
+            self.User_themePref = theme
+
+    def clear_completed_tasks(self):
+        self.completed_items = []
+        with open(SAVE_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "todo": self.todo_items,
+                    "completed": self.completed_items
+                },
+                f,
+                indent=4
+            )
+        self.refresh_completed_display()
+    
     def load_tasks(self):
         if not os.path.exists(SAVE_FILE):
             return
